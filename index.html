@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Marcos Mascarini — Vision AI</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+
+  <style>
+    :root {
+      --bg:        #0a0a0f;
+      --surface:   #12121a;
+      --card:      #1a1a26;
+      --border:    #2a2a3d;
+      --accent:    #00e5ff;
+      --accent2:   #7c3aed;
+      --accent3:   #f97316;
+      --text:      #e8e8f0;
+      --muted:     #6b6b8a;
+      --radius:    16px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Noise grain overlay ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: .5;
+    }
+
+    /* ── Glow blobs ── */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: .18;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .blob-1 { width: 500px; height: 500px; background: var(--accent2); top: -150px; left: -150px; }
+    .blob-2 { width: 400px; height: 400px; background: var(--accent);  bottom: -100px; right: -100px; }
+
+    /* ── Layout ── */
+    .page-wrapper {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+      animation: fadeDown .7s ease both;
+    }
+
+    .logo-tag {
+      display: inline-block;
+      font-family: 'DM Mono', monospace;
+      font-size: .7rem;
+      letter-spacing: .25em;
+      color: var(--accent);
+      background: rgba(0,229,255,.08);
+      border: 1px solid rgba(0,229,255,.2);
+      padding: .3rem .8rem;
+      border-radius: 99px;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      line-height: 1.1;
+      letter-spacing: -.02em;
+      background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: .85rem;
+      margin-top: .6rem;
+      letter-spacing: .05em;
+    }
+
+    /* ── Card ── */
+    .card-main {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 480px;
+      padding: 2rem;
+      box-shadow: 0 24px 80px rgba(0,0,0,.5);
+      animation: fadeUp .7s .15s ease both;
+    }
+
+    /* ── Start Button ── */
+    .btn-start {
+      width: 100%;
+      padding: .9rem 1.5rem;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      color: #fff;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform .2s, box-shadow .2s, opacity .2s;
+      box-shadow: 0 8px 32px rgba(124,58,237,.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .6rem;
+    }
+
+    .btn-start::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,.15), transparent);
+      opacity: 0;
+      transition: opacity .25s;
+    }
+
+    .btn-start:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 40px rgba(0,229,255,.3);
+    }
+    .btn-start:hover:not(:disabled)::before { opacity: 1; }
+    .btn-start:active:not(:disabled)        { transform: translateY(0); }
+    .btn-start:disabled                     { opacity: .55; cursor: not-allowed; }
+
+    .btn-start .spinner-border { width: 1rem; height: 1rem; border-width: 2px; display: none; }
+    .btn-start.loading .spinner-border   { display: inline-block; }
+    .btn-start.loading .btn-icon         { display: none; }
+
+    /* ── Status badge ── */
+    #status-badge {
+      display: none;
+      align-items: center;
+      gap: .45rem;
+      font-size: .75rem;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(0,229,255,.07);
+      border: 1px solid rgba(0,229,255,.2);
+      border-radius: 99px;
+      padding: .35rem .9rem;
+      margin-top: 1.25rem;
+      width: fit-content;
+      animation: fadeIn .4s ease both;
+    }
+    #status-badge .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 1.5s infinite;
+    }
+
+    /* ── Webcam ── */
+    #webcam-wrapper {
+      display: none;
+      margin-top: 1.5rem;
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #000;
+      aspect-ratio: 1;
+    }
+    #webcam-wrapper canvas {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover;
+      display: block;
+    }
+    .cam-corner {
+      position: absolute;
+      width: 18px; height: 18px;
+      border-color: var(--accent);
+      border-style: solid;
+      opacity: .7;
+    }
+    .cam-corner.tl { top: 10px;    left: 10px;   border-width: 2px 0 0 2px; }
+    .cam-corner.tr { top: 10px;    right: 10px;  border-width: 2px 2px 0 0; }
+    .cam-corner.bl { bottom: 10px; left: 10px;   border-width: 0 0 2px 2px; }
+    .cam-corner.br { bottom: 10px; right: 10px;  border-width: 0 2px 2px 0; }
+
+    /* ── Labels / Bars ── */
+    #label-container {
+      display: none;
+      margin-top: 1.75rem;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .prediction-item {}
+
+    .prediction-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: .45rem;
+    }
+
+    .class-name {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: .9rem;
+      color: var(--text);
+      letter-spacing: .03em;
+    }
+
+    .class-pct {
+      font-size: .8rem;
+      color: var(--accent);
+      font-family: 'DM Mono', monospace;
+      min-width: 3.5rem;
+      text-align: right;
+    }
+
+    .progress-track {
+      height: 8px;
+      background: rgba(255,255,255,.06);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 99px;
+      width: 0%;
+      transition: width .35s cubic-bezier(.4,0,.2,1), background .35s;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+    }
+
+    .progress-fill.high {
+      background: linear-gradient(90deg, #10b981, #00e5ff);
+      box-shadow: 0 0 12px rgba(0,229,255,.4);
+    }
+
+    /* ── Divider ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.5rem 0;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 3rem;
+      text-align: center;
+      font-size: .72rem;
+      color: var(--muted);
+      letter-spacing: .06em;
+      animation: fadeUp .7s .3s ease both;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Animations ── */
+    @keyframes fadeDown { from { opacity:0; transform:translateY(-18px); } to { opacity:1; transform:none; } }
+    @keyframes fadeUp   { from { opacity:0; transform:translateY( 18px); } to { opacity:1; transform:none; } }
+    @keyframes fadeIn   { from { opacity:0; }                              to { opacity:1; } }
+    @keyframes pulse    { 0%,100%{ opacity:1; } 50%{ opacity:.3; } }
+
+    /* ── Responsive tweaks ── */
+    @media (max-width: 480px) {
+      .card-main { padding: 1.4rem; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Decorative blobs -->
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <div class="page-wrapper">
+
+    <!-- Header -->
+    <header>
+      <div class="logo-tag"><i class="bi bi-cpu me-1"></i> Teachable Machine</div>
+      <h1>Marcos Mascarini</h1>
+      <p class="subtitle">// real-time image classification &nbsp;·&nbsp; vision AI</p>
+    </header>
+
+    <!-- Main card -->
+    <div class="card-main">
+
+      <!-- Start button -->
+      <button class="btn-start" id="startBtn" onclick="init()">
+        <i class="bi bi-camera-video-fill btn-icon"></i>
+        <span class="spinner-border" role="status" aria-hidden="true"></span>
+        <span id="btnLabel">Ativar Câmera</span>
+      </button>
+
+      <!-- Live badge -->
+      <div id="status-badge">
+        <span class="dot"></span>
+        <span>Ao vivo</span>
+      </div>
+
+      <!-- Webcam -->
+      <div id="webcam-wrapper">
+        <div class="cam-corner tl"></div>
+        <div class="cam-corner tr"></div>
+        <div class="cam-corner bl"></div>
+        <div class="cam-corner br"></div>
+      </div>
+
+      <hr class="divider" id="divider" style="display:none;">
+
+      <!-- Predictions -->
+      <div id="label-container"></div>
+
+    </div><!-- /card -->
+
+    <!-- Footer -->
+    <footer>
+      <p>Powered by <a href="https://teachablemachine.withgoogle.com/" target="_blank">Teachable Machine</a> &amp; TensorFlow.js</p>
+      <p class="mt-1">© 2024 Marcos Mascarini</p>
+    </footer>
+
+  </div><!-- /page-wrapper -->
+
+  <!-- TF + Teachable Machine -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    const URL = "https://teachablemachine.withgoogle.com/models/RgxzfFmEU9/";
+    let model, webcam, maxPredictions;
+    let predictionItems = [];
+
+    const BAR_COLORS = [
+      ['#7c3aed','#00e5ff'],
+      ['#f97316','#fbbf24'],
+      ['#10b981','#00e5ff'],
+      ['#ec4899','#f97316'],
+      ['#3b82f6','#06b6d4'],
+    ];
+
+    async function init() {
+      const btn      = document.getElementById('startBtn');
+      const btnLabel = document.getElementById('btnLabel');
+
+      btn.classList.add('loading');
+      btn.disabled = true;
+      btnLabel.textContent = 'Carregando modelo...';
+
+      try {
+        model          = await tmImage.load(URL + "model.json", URL + "metadata.json");
+        maxPredictions = model.getTotalClasses();
+
+        const flip = true;
+        webcam = new tmImage.Webcam(400, 400, flip);
+        await webcam.setup();
+        await webcam.play();
+        window.requestAnimationFrame(loop);
+
+        // Show webcam
+        const wrapper = document.getElementById('webcam-wrapper');
+        wrapper.appendChild(webcam.canvas);
+        wrapper.style.display = 'block';
+
+        // Show divider
+        document.getElementById('divider').style.display = 'block';
+
+        // Build prediction bars
+        const container = document.getElementById('label-container');
+        container.style.display = 'flex';
+        predictionItems = [];
+
+        for (let i = 0; i < maxPredictions; i++) {
+          const colors = BAR_COLORS[i % BAR_COLORS.length];
+
+          const item = document.createElement('div');
+          item.className = 'prediction-item';
+
+          item.innerHTML = `
+            <div class="prediction-header">
+              <span class="class-name" id="class-name-${i}">Classe ${i + 1}</span>
+              <span class="class-pct" id="class-pct-${i}">0%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="bar-${i}"
+                   style="background: linear-gradient(90deg, ${colors[0]}, ${colors[1]})"></div>
+            </div>`;
+
+          container.appendChild(item);
+          predictionItems.push({
+            nameEl: item.querySelector(`#class-name-${i}`),
+            pctEl:  item.querySelector(`#class-pct-${i}`),
+            barEl:  item.querySelector(`#bar-${i}`),
+            colors
+          });
+        }
+
+        // Show live badge, update button
+        document.getElementById('status-badge').style.display = 'flex';
+        btn.classList.remove('loading');
+        btn.innerHTML = `<i class="bi bi-stop-circle me-2"></i> Em execução`;
+        btn.style.background = 'linear-gradient(135deg, #1a1a26, #2a2a3d)';
+        btn.style.boxShadow  = 'none';
+        btn.style.border     = '1px solid var(--border)';
+        btn.disabled = true;
+
+      } catch (err) {
+        console.error(err);
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        btnLabel.textContent = 'Tentar novamente';
+        alert('Não foi possível acessar a câmera ou carregar o modelo. Verifique as permissões.');
+      }
+    }
+
+    async function loop() {
+      webcam.update();
+      await predict();
+      window.requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+      const prediction = await model.predict(webcam.canvas);
+
+      for (let i = 0; i < maxPredictions; i++) {
+        const p    = prediction[i];
+        const pct  = Math.round(p.probability * 100);
+        const item = predictionItems[i];
+
+        item.nameEl.textContent = p.className;
+        item.pctEl.textContent  = pct + '%';
+        item.barEl.style.width  = pct + '%';
+
+        if (pct >= 70) {
+          item.barEl.classList.add('high');
+          item.barEl.style.background = '';
+        } else {
+          item.barEl.classList.remove('high');
+          item.barEl.style.background =
+            `linear-gradient(90deg, ${item.colors[0]}, ${item.colors[1]})`;
+        }
+      }
+    }
+  </script>
+</body>
+</html>
