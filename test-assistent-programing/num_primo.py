@@ -1,20 +1,19 @@
 import math
 
 def eh_primo(n: int) -> bool:
-    """
-    Verifica se um número é primo.
+    """Verifica se um número é primo.
 
-    Um número primo é um inteiro maior que 1 que não tem divisores positivos
-    além de 1 e ele mesmo.
+    Um número primo é um inteiro maior que 1 que não possui divisores
+    positivos além de 1 e ele mesmo.
 
     Args:
-        n (int): O número a ser verificado.
+        n: O número a ser verificado.
 
     Returns:
-        bool: True se n for primo, False caso contrário.
+        True se n for primo, False caso contrário.
 
     Raises:
-        Nenhum. Assume que n é um inteiro.
+        TypeError: Se n não for um inteiro.
     """
     if n <= 1:
         return False
